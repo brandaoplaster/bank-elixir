@@ -5,21 +5,31 @@ defmodule Account do
   @accounts = "accounts.txt"
 
   def create_account(user) do:
-    [%__MODULE__{user: user, balance: 1000}] ++ search_accounts()
-    |> :erlang.term_to_binary()
-    File.write(@accounts, binary)
+    accounts = search_accounts()
+
+    case search_by_email(user.email) do
+      nil ->
+        [%__MODULE__{user: user, balance: 1000}] ++ search_accounts()
+        |> :erlang.term_to_binary()
+        File.write(@accounts, binary)
+      _ -> {:error, "Existing account"}
+    end
   end
 
-  def transfer(accounts, from, to, value) do
-    from = Enum.find(accounts, fn account -> account.user.email == from.user.email end)
+  def transfer(from, to, value) do
+    from = search_by_email(from.user.email)
   
     cond do
       validate_balance(from.balance, balance) -> {:error, "insufficient funds"}
       true ->
-        to = Enum.find(accounts, fn account -> account.user.email == to.user.email end)
+        accounts = search_accounts()
+        accounts = List.delete(accounts, from)
+        accounts = List.delete(accounts, to)
+
         from = %Account{from | balance: from.balance - value}
         to = %Account{to | balance: to.balance + value}
-      [from, to]
+        accounts = accounts ++ [from, to]
+        File.write(@accounts, :erlang.term_to_binary(accounts))
     end
   end
 
@@ -33,6 +43,8 @@ defmodule Account do
   end
 
   defp validate_balance(balance, value), do: balance < value
+  
+  defp search_by_email(email), do: Enum.find(search_accounts(), &(&.1.user.email == email))
 
   defp search_accounts do
     {:ok, binary} = File.read(@accounts)
