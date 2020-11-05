@@ -17,5 +17,14 @@ defmodule Account do
     end
   end
 
+  def sac(account, value) do
+    cond do
+      validate_balance(account.balance, value) -> {:error, "insufficient funds"}
+      true ->
+        account = %Account{account | balance: account.balance - value}
+        {:ok, account, "Withdrawal successful!"}
+    end
+  end
+
   defp validate_balance(balance, value), do: balance < value
 end
