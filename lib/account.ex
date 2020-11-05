@@ -2,7 +2,13 @@ defmodule Account do
 
   defstruct user: User, balance: nil
 
-  def create_account(user), do: %__MODULE__{user: user, balance: 1000}
+  @accounts = "accounts.txt"
+
+  def create_account(user) do:
+    [%__MODULE__{user: user, balance: 1000}] ++ search_accounts()
+    |> :erlang.term_to_binary()
+    File.write(@accounts, binary)
+  end
 
   def transfer(accounts, from, to, value) do
     from = Enum.find(accounts, fn account -> account.user.email == from.user.email end)
@@ -27,4 +33,9 @@ defmodule Account do
   end
 
   defp validate_balance(balance, value), do: balance < value
+
+  defp search_accounts do
+    {:ok, binary} = File.read(@accounts)
+    :erlang.binary_to_term(binary)
+  end
 end
